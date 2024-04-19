@@ -30,6 +30,23 @@ const User = mongoose.model('User', userSchema);
 // Middleware
 app.use(bodyParser.json());
 
+// Authentication Middleware
+function authenticateToken(req, res, next){
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if(err){
+      return res.status(403).json({ message: 'Invalid token' });
+    }
+    req.user = user;
+    next();
+  });
+}
+
 // Nodemailer configuration
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -107,7 +124,21 @@ app.post('/login', async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Internal Server Error'});
   }
-})
+});
+
+// API endpoint to retrieve user information
+app.get('/user', authenticateToken, async (req, res) => {
+  try {
+    const email = req.user.email;
+    const user = await User.findOne({ email });
+    if(!user){
+      res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({ user });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
 
 // Start the server
 app.listen(port, () => {
