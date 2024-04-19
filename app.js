@@ -18,7 +18,10 @@ db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    otp: { type: String}
+    otp: { type: String},
+    location: { type: String},
+    age: { type: Number}, 
+    workDetails: { type: String}
 });
 const User = mongoose.model('User', userSchema);
 
@@ -48,7 +51,7 @@ app.post('/register', async (req, res) => {
         return res.status(400).json({ message: 'User already exists' });
       }
       const otp = generateOTP();
-      const newUser = new User({ email, password });
+      const newUser = new User({ email, password, otp });
       await newUser.save();
 
       // Send otp via email
@@ -65,6 +68,27 @@ app.post('/register', async (req, res) => {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+
+// API endpoint for validating OTP and adding extra information
+app.post('/validate', async (req, res) => {
+  const { email, otp, location, age, workDetails} = req.body;
+  try {
+    const user = await User.findOne({ email, otp });
+    if(!user){
+      return res.status(400).json({ message: 'Invalid OTP'});
+    }
+
+    // Update user profile with additional information
+    user.location = location;
+    user.age = age;
+    user.workDetails = workDetails;
+    await user.save();
+
+    res.status(200).json({ message: 'User Profile updated successfully'});
+  } catch (error) {
+      res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
 
 // Start the server
 app.listen(port, () => {
