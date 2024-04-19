@@ -6,7 +6,7 @@ const app = express();
 const port = 3000;
 
 // Connect to MongoDB
-mongoose.connect('', {
+mongoose.connect('mongodb://127.0.0.1:27017/WebApi', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
