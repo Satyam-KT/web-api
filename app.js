@@ -2,9 +2,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const port = 3000;
+const JWT_SECRET = 'sktabc';
 
 // Connect to MongoDB
 mongoose.connect('mongodb://127.0.0.1:27017/WebApi', {
@@ -89,6 +91,23 @@ app.post('/validate', async (req, res) => {
       res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+
+// API endpoint for user login and JWT token generation
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if(!user || user.password !== password){
+      return res.status(401).json({ message: 'Invalid Email or Password' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ email: user.email }, JWT_SECRET);
+    res.status(200).json({ token });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal Server Error'});
+  }
+})
 
 // Start the server
 app.listen(port, () => {
